@@ -21,43 +21,88 @@ include_recipe "java"
 
 package "unzip"
 
-remote_file "/opt/sonar-#{node['sonar']['version']}.zip" do
+sonar_current_link = "#{node[:sonar][:dir]}/current"
+sonar_version_path = "#{node[:sonar][:dir]}/sonar-#{node[:sonar][:version]}"
+sonar_version_zip = "#{sonar_version_path}.zip"
+
+
+# Create a user to run the service
+if node[:sonar][:create_user]
+  group node[:sonar][:service_group] do
+  end
+
+# Create the Sonar User
+  user node[:sonar][:service_user] do
+    comment "Sonar User"
+    gid node[:sonar][:service_group]
+    shell "/sbin/nologin"
+  end
+end
+
+directory node[:sonar][:dir] do
+  mode 0755
+  recursive true
+  if node[:sonar][:create_user]
+    owner node[:sonar][:service_user]
+    group node[:sonar][:service_group]
+  end
+end
+
+remote_file sonar_version_zip do
   source "#{node['sonar']['mirror']}/sonar-#{node['sonar']['version']}.zip"
   mode "0644"
   checksum "#{node['sonar']['checksum']}"
-  not_if { ::File.exists?("/opt/sonar-#{node['sonar']['version']}.zip") }
+  not_if { ::File.exists?(sonar_version_zip) }
 end
 
-execute "unzip /opt/sonar-#{node['sonar']['version']}.zip -d /opt/" do
-  not_if { ::File.directory?("/opt/sonar-#{node['sonar']['version']}/") }
+execute "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}" do
+  not_if { ::File.directory?(sonar_version_path) }
+  if node[:sonar][:create_user]
+    user node[:sonar][:service_user]
+    group node[:sonar][:service_group]
+  end
 end
 
-link "/opt/sonar" do
-  to "/opt/sonar-#{node['sonar']['version']}"
+link sonar_current_link do
+  to sonar_version_path
 end
 
-service "sonar" do
-  stop_command "sh /opt/sonar/bin/#{node['sonar']['os_kernel']}/sonar.sh stop"
-  start_command "sh /opt/sonar/bin/#{node['sonar']['os_kernel']}/sonar.sh start"
-  status_command "sh /opt/sonar/bin/#{node['sonar']['os_kernel']}/sonar.sh status"
-  restart_command "sh /opt/sonar/bin/#{node['sonar']['os_kernel']}/sonar.sh restart"
-  action :start
+
+link "/etc/init.d/sonar" do
+  to "#{sonar_current_link}/bin/#{node['sonar']['os_kernel']}/sonar.sh"
 end
 
 template "sonar.properties" do
-  path "/opt/sonar/conf/sonar.properties"
+  path "#{sonar_current_link}/conf/sonar.properties"
   source "sonar.properties.erb"
   owner "root"
   group "root"
   mode 0644
-  notifies :restart, resources(:service => "sonar")
 end
 
 template "wrapper.conf" do
-  path "/opt/sonar/conf/wrapper.conf"
+  path "#{sonar_current_link}/conf/wrapper.conf"
   source "wrapper.conf.erb"
   owner "root"
   group "root"
   mode 0644
-  notifies :restart, resources(:service => "sonar")
+end
+
+template "sonar.sh" do
+  path "#{sonar_current_link}/bin/#{node['sonar']['os_kernel']}/sonar.sh"
+  source "sonar.sh.erb"
+  owner "root"
+  group "root"
+  mode 0755
+end
+
+service "sonar" do
+  action [ :start ]
+  supports :status => false, :restart => true
+  provider Chef::Provider::Service::Init
+end
+
+service "sonar" do
+  action [ :enable ]
+  provider Chef::Provider::Service::Init::Redhat
 end

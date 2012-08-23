@@ -19,7 +19,6 @@ Inlcude a `proxy_*` recipe to your `run_list` to access sonar over a proxy serve
 
 # Todos
 
-* Implement `dir` attribute to make installation path more flexible
 * Implement different Database backends like MySql
 * Implement plugin recipes eg. http://docs.codehaus.org/display/SONAR/PHP+Plugin
   Download jars to plugin folder, restart Sonar
