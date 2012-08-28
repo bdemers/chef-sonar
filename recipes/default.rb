@@ -97,6 +97,12 @@ template "sonar.sh" do
 end
 
 service "sonar" do
+  action [ :stop ]
+  supports :status => false, :restart => true
+  provider Chef::Provider::Service::Init
+end
+
+service "sonar" do
   action [ :start ]
   supports :status => false, :restart => true
   provider Chef::Provider::Service::Init
