@@ -2,11 +2,10 @@
 plugins_link = "#{node[:sonar][:dir]}/current/extensions/plugins"
 plugins_dir = "#{node[:sonar][:dir]}/plugins"
 
-if ::File.directory?( plugins_link )
-  directory plugins_link do
-    action :delete
-    recursive true
-  end
+directory plugins_link do
+  action :delete
+  recursive true
+  only_if {::File.directory?( "#{node[:sonar][:dir]}/current/extensions/plugins" )}
 end
 
 directory plugins_dir do

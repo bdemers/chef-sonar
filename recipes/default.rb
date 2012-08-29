@@ -67,6 +67,8 @@ link sonar_current_link do
   to sonar_version_path
 end
 
+#install plugins before starting up server
+include_recipe 'sonar::plugins'
 
 link "/etc/init.d/sonar" do
   to "#{sonar_current_link}/bin/#{node['sonar']['os_kernel']}/sonar.sh"
