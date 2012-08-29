@@ -9,6 +9,8 @@ recipe           "sonar::database_mysql", "Includes the recipe to install MySql-
 recipe           "sonar::proxy_apache", "Includes the recipe to install Apache-Webserver and proxy modules to access sonar. Creates a host for sonar."
 recipe           "sonar::proxy_nginx", "Includes the recipe to install Nginx-Webserver and configures proxy to access sonar. Creates a host for sonar."
 
+depends          "mysql" # this could be removed if the database_mysql recipe does not include_recipe mysql::server
+
 %w{ debian ubuntu }.each do |os|
   supports os
 end
