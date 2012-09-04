@@ -63,6 +63,13 @@ execute "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}" do
   end
 end
 
+service "sonar" do
+  action [ :stop ]
+  supports :status => false, :restart => true
+  provider Chef::Provider::Service::Init
+  only_if { ::File.exist?( "/etc/init.d/sonar" ) } # stop the service before we replace the link
+end
+
 link sonar_current_link do
   to sonar_version_path
 end
@@ -99,13 +106,7 @@ template "sonar.sh" do
 end
 
 service "sonar" do
-  action [ :stop ]
-  supports :status => false, :restart => true
-  provider Chef::Provider::Service::Init
-end
-
-service "sonar" do
-  action [ :start ]
+  action [ :restart ]
   supports :status => false, :restart => true
   provider Chef::Provider::Service::Init
 end

@@ -37,7 +37,5 @@ default['sonar']['create_user']            = false
 default['sonar']['service_user']           = "sonar"
 default['sonar']['service_group']          = "sonar"
 
-# redirect service used to resolve LATEST plugin version
-default['sonar']['plugin_resolution_service'] = "https://repository.sonatype.org/service/local/artifact/maven/redirect?"
-default['sonar']['plugin_repository'] = "central-proxy"
+default['sonar']['maven_repository_url'] = "http://repo2.maven.org/maven2"
 default['sonar']['plugins'] = [] # no plugins installed by default
