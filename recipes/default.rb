@@ -25,6 +25,9 @@ sonar_current_link = "#{node[:sonar][:dir]}/current"
 sonar_version_path = "#{node[:sonar][:dir]}/sonar-#{node[:sonar][:version]}"
 sonar_version_zip = "#{sonar_version_path}.zip"
 
+plugins_link = "#{node[:sonar][:dir]}/current/extensions/plugins"
+plugins_dir_path = "#{node[:sonar][:dir]}/plugins"
+
 
 # Create a user to run the service
 if node[:sonar][:create_user]
@@ -35,7 +38,6 @@ if node[:sonar][:create_user]
   user node[:sonar][:service_user] do
     comment "Sonar User"
     gid node[:sonar][:service_group]
-    shell "/sbin/nologin"
   end
 end
 
@@ -55,7 +57,8 @@ remote_file sonar_version_zip do
   not_if { ::File.exists?(sonar_version_zip) }
 end
 
-execute "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}" do
+execute 'unzip sonar' do
+  command "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}"
   not_if { ::File.directory?(sonar_version_path) }
   if node[:sonar][:create_user]
     user node[:sonar][:service_user]
@@ -63,19 +66,42 @@ execute "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}" do
   end
 end
 
-service "sonar" do
-  action [ :stop ]
-  supports :status => false, :restart => true
-  provider Chef::Provider::Service::Init
-  only_if { ::File.exist?( "/etc/init.d/sonar" ) } # stop the service before we replace the link
-end
-
 link sonar_current_link do
   to sonar_version_path
 end
 
+
+directory plugins_link do
+  action :delete
+  recursive true
+  only_if {::File.directory?( plugins_link )}
+end
+
+directory plugins_dir_path do
+  action :create
+  recursive true
+  if node[:sonar][:create_user]
+    owner node[:sonar][:service_user]
+    group node[:sonar][:service_group]
+  end
+end
+
+link plugins_link do
+  to plugins_dir_path
+end
+
 #install plugins before starting up server
-include_recipe 'sonar::plugins'
+#foo =
+sonar_plugins 'plugins' do
+  plugins node[:sonar][:plugins]
+  plugins_dir plugins_dir_path
+end
+
+#ruby_block 'test-log' do
+#  block do
+#    Chef::Log.info( "WTF: #{foo.updated_by_last_action?}" )
+#  end
+#end
 
 link "/etc/init.d/sonar" do
   to "#{sonar_current_link}/bin/#{node['sonar']['os_kernel']}/sonar.sh"
@@ -105,13 +131,15 @@ template "sonar.sh" do
   mode 0755
 end
 
-service "sonar" do
-  action [ :restart ]
-  supports :status => false, :restart => true
-  provider Chef::Provider::Service::Init
-end
-
-service "sonar" do
-  action [ :enable ]
-  provider Chef::Provider::Service::Init::Redhat
+service 'sonar' do
+  action [ :start,  :enable ]
+  supports :status => true, :restart => true
+  status_command '/etc/init.d/sonar status | grep "is running"'
+  subscribes :stop, resources("execute[unzip sonar]",
+                              "link[/etc/init.d/sonar]",
+                              "template[sonar.properties]",
+                              "template[wrapper.conf]",
+                              "template[sonar.sh]",
+                              "sonar_plugins[plugins]"
+                              ), :immediately
 end
