@@ -21,5 +21,6 @@ template grants_path do
 end
 
 execute "mysql-install-application-privileges" do
+  # TODO: use #{node['mysql']['mysql_bin']}
   command "/usr/bin/mysql -u root #{node[:mysql][:server_root_password].empty? ? '' : '-p' }#{node[:mysql][:server_root_password]} < #{grants_path}"
 end
