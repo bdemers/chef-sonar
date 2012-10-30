@@ -44,14 +44,14 @@ end
 directory node[:sonar][:dir] do
   mode 0755
   recursive true
-  if node[:sonar][:create_user]
+  unless node[:os] == 'windows'
     owner node[:sonar][:service_user]
     group node[:sonar][:service_group]
   end
 end
 
 remote_file sonar_version_zip do
-  source "#{node['sonar']['mirror']}/sonar-#{node['sonar']['version']}.zip"
+  source "#{node[:sonar][:mirror]}/sonar-#{node[:sonar][:version]}.zip"
   mode "0644"
   checksum "#{node['sonar']['checksum']}"
   not_if { ::File.exists?(sonar_version_zip) }
@@ -60,7 +60,7 @@ end
 execute 'unzip sonar' do
   command "unzip #{sonar_version_zip} -d #{node[:sonar][:dir]}"
   not_if { ::File.directory?(sonar_version_path) }
-  if node[:sonar][:create_user]
+  unless node[:os] == 'windows'
     user node[:sonar][:service_user]
     group node[:sonar][:service_group]
   end
@@ -80,7 +80,7 @@ end
 directory plugins_dir_path do
   action :create
   recursive true
-  if node[:sonar][:create_user]
+  unless node[:os] == 'windows'
     owner node[:sonar][:service_user]
     group node[:sonar][:service_group]
   end
@@ -91,7 +91,6 @@ link plugins_link do
 end
 
 #install plugins before starting up server
-#foo =
 sonar_plugins 'plugins' do
   plugins node[:sonar][:plugins]
   plugins_dir plugins_dir_path

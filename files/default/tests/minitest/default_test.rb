@@ -20,9 +20,29 @@ describe_recipe 'sonar::default' do
 #    end
   end
 
+  describe "plugins" do
+    it "plugins have correct permissions" do
+        node['sonar']['plugins'].each do |plugin|
+
+        plugin_file = "#{node['sonar']['dir']}/plugins/#{plugin[:name]}-#{plugin[:version]}.jar"
+        file(plugin_file).must_exist
+        # FIXME, regression in chef 0.10.10+10.12.0 http://tickets.opscode.com/browse/CHEF-3235
+        #unless node[:os] == 'windows'
+        #  file(plugin_file).must_have(:owner, node['sonar']['service_user'])
+        #end
+      end
+    end
+  end
+
   describe "run_state" do
     it "succeed" do
       run_status.success?.must_equal true
     end
+
+    it "service running" do
+      service('sonar').must_be_running
+      service('sonar').must_be_enabled
+    end
   end
+
 end

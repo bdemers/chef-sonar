@@ -18,6 +18,8 @@ action :create do
     remote_file.source(plugin[:remote_url])
     remote_file.backup(false)
     remote_file.mode('0440')
+    remote_file.owner(node[:sonar][:service_user]) unless node[:os] == 'windows'
+    remote_file.group(node[:sonar][:service_group]) unless node[:os] == 'windows'
     remote_file.run_action(:create_if_missing)
 
     updated = updated || remote_file.updated_by_last_action?
