@@ -30,6 +30,7 @@ default['sonar']['java_initmemory']        = "256"
 default['sonar']['java_maxmemory']         = "512"
 default['sonar']['java_maxpermsize']       = "128m"
 default['sonar']['java_command']           = "java"
+default['sonar']['jmx_enabled']            = false
 default['sonar']['logfile_maxsize']        = "0"
 default['sonar']['syslog_loglevel']        = "NONE"
 
